@@ -173,7 +173,10 @@ PyFile::PyFile(const std::string& filename, bool separate_channels, bool header_
         //
         
         if (header_only)
+        {
+            parts.append(py::cast<PyPart>(PyPart(P)));
             continue;
+        }
         
         //
         // If we're gathering RGB channels, identify which channels to gather
