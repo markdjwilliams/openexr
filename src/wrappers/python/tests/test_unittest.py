@@ -564,5 +564,48 @@ class TestUnittest(unittest.TestCase):
             with OpenEXR.File(outfilename, separate_channels=True) as i:
                 compare_files (i, outfile2)
 
+    def test_header_only(self):
+        """Verify that header_only=True returns the header and no pixel data."""
+
+        width = 4
+        height = 4
+        size = width * height
+        R = np.zeros((height, width), dtype='f')
+        channels = { "R": OpenEXR.Channel("R", R, 1, 1) }
+
+        def make_header():
+            h = {}
+            h["floatvector"] = [1.0, 2.0, 3.0]
+            return h
+
+        header = make_header()
+
+        # Write the reference file
+        with OpenEXR.File(header, channels) as outfile:
+            outfilename = mktemp_outfilename()
+            outfile.write(outfilename)
+
+        # Open in full mode
+        with OpenEXR.File(outfilename, header_only=False) as full:    
+            full_header = full.header()
+            for k, v in header.items():
+                self.assertIn(k, full_header)
+                self.assertEqual(full_header[k], v)
+            # Channel data should be loaded
+            self.assertEqual(len(full.channels()), 1)
+            self.assertEqual(len(full.parts[0].channels), 1)
+
+        # Open in header-only mode
+        with OpenEXR.File(outfilename, header_only=True) as ho:
+            ho_header = ho.header()
+            for k, v in header.items():
+                self.assertIn(k, ho_header)
+                self.assertEqual(ho_header[k], v)
+
+            # No channel data should be loaded
+            self.assertEqual(len(ho.channels()), 0)
+            self.assertEqual(len(ho.parts[0].channels), 0)
+
+
 if __name__ == '__main__':
     unittest.main()
